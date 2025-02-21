@@ -182,7 +182,7 @@ main() {
     
     # Run the application
     echo -e "${GREEN}Starting Image Grid Generator...${NC}"
-    python3 image_grid_generator.py
+    python3 image_grid_app.py
     
     # Deactivate virtual environment
     deactivate
