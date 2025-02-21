@@ -10,7 +10,7 @@
 1. Clone the repository:
 ```bash
 git clone https://github.com/vincenthopf/imagegridcreator.git
-cd image-grid-generator
+cd imagegridcreator
 ```
 
 2. Make the run script executable:
