@@ -1,0 +1,144 @@
+#!/bin/bash
+
+# Image Grid Generator Installer and Runner
+
+# Color codes for output
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+NC='\033[0m' # No Color
+
+# Minimum Python version
+PYTHON_MIN_VERSION="3.8.0"
+
+# Check if the script is being run with bash
+if [ -z "$BASH_VERSION" ]; then
+    echo -e "${RED}Error: This script must be run with bash${NC}"
+    exit 1
+fi
+
+# Function to check if a command exists
+command_exists() {
+    command -v "$1" >/dev/null 2>&1
+}
+
+# Function to check Python version
+check_python_version() {
+    local version=$(python3 --version 2>&1 | awk '{print $2}')
+    local result=$(printf '%s\n' "$PYTHON_MIN_VERSION" "$version" | sort -V | head -n1)
+    
+    if [ "$result" != "$PYTHON_MIN_VERSION" ]; then
+        echo -e "${RED}Error: Python version $PYTHON_MIN_VERSION or newer is required. Current version: $version${NC}"
+        return 1
+    fi
+    return 0
+}
+
+# Function to install Python (platform-specific)
+install_python() {
+    echo -e "${YELLOW}Installing Python...${NC}"
+    
+    # Detect the operating system
+    case "$(uname -s)" in
+        Darwin*)
+            # macOS
+            if ! command_exists brew; then
+                echo -e "${YELLOW}Installing Homebrew...${NC}"
+                /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+            fi
+            brew install python@3.9
+            ;;
+        
+        Linux*)
+            # Linux (Ubuntu/Debian)
+            if [ -f /etc/debian_version ]; then
+                sudo apt-get update
+                sudo apt-get install -y python3 python3-pip python3-venv
+            elif [ -f /etc/redhat-release ]; then
+                # For Red Hat/CentOS/Fedora
+                sudo yum install -y python3 python3-pip python3-venv
+            else
+                echo -e "${RED}Unsupported Linux distribution${NC}"
+                exit 1
+            fi
+            ;;
+        
+        *)
+            echo -e "${RED}Unsupported operating system${NC}"
+            exit 1
+            ;;
+    esac
+}
+
+# Function to create virtual environment
+create_venv() {
+    # Check if venv exists
+    if [ ! -d "venv" ]; then
+        echo -e "${YELLOW}Creating virtual environment...${NC}"
+        python3 -m venv venv
+    fi
+    
+    # Activate virtual environment
+    source venv/bin/activate
+}
+
+# Function to install dependencies
+install_dependencies() {
+    echo -e "${YELLOW}Installing dependencies...${NC}"
+    
+    # Install or upgrade pip
+    pip install --upgrade pip
+    
+    # Install required libraries
+    pip install pillow reportlab customtkinter
+    
+    # Check tkinter installation
+    python3 -c "import tkinter" 2>/dev/null
+    if [ $? -ne 0 ]; then
+        echo -e "${YELLOW}Installing Tkinter...${NC}"
+        case "$(uname -s)" in
+            Darwin*)
+                brew install python-tk@3.9
+                ;;
+            Linux*)
+                if [ -f /etc/debian_version ]; then
+                    sudo apt-get install -y python3-tk
+                elif [ -f /etc/redhat-release ]; then
+                    sudo yum install -y python3-tk
+                fi
+                ;;
+        esac
+    fi
+}
+
+# Main script
+main() {
+    # Ensure script is run from its directory
+    cd "$(dirname "$0")"
+    
+    # Check if Python is installed
+    if ! command_exists python3; then
+        install_python
+    fi
+    
+    # Check Python version
+    if ! check_python_version; then
+        install_python
+    fi
+    
+    # Create virtual environment
+    create_venv
+    
+    # Install dependencies
+    install_dependencies
+    
+    # Run the application
+    echo -e "${GREEN}Starting Image Grid Generator...${NC}"
+    python3 image_grid_generator.py
+    
+    # Deactivate virtual environment
+    deactivate
+}
+
+# Run the main function
+main
