@@ -1,4 +1,6 @@
 # Image Grid Generator
+Takes provided images and generates a PDF file with them layed out in a grid formation. 
+
 
 ## Prerequisites
 
