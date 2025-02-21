@@ -9,7 +9,7 @@
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/image-grid-generator.git
+git clone https://github.com/vincenthopf/imagegridcreator.git
 cd image-grid-generator
 ```
 
