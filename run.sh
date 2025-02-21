@@ -53,10 +53,10 @@ install_python() {
             # Linux (Ubuntu/Debian)
             if [ -f /etc/debian_version ]; then
                 sudo apt-get update
-                sudo apt-get install -y python3 python3-pip python3-venv
+                sudo apt-get install -y python3 python3-pip python3-venv python3-dev build-essential
             elif [ -f /etc/redhat-release ]; then
                 # For Red Hat/CentOS/Fedora
-                sudo yum install -y python3 python3-pip python3-venv
+                sudo yum install -y python3 python3-pip python3-venv python3-devel gcc
             else
                 echo -e "${RED}Unsupported Linux distribution${NC}"
                 exit 1
@@ -82,16 +82,61 @@ create_venv() {
     source venv/bin/activate
 }
 
+# Function to install system dependencies
+install_system_deps() {
+    echo -e "${YELLOW}Installing system dependencies...${NC}"
+    
+    case "$(uname -s)" in
+        Darwin*)
+            # macOS dependencies
+            brew install libjpeg zlib
+            ;;
+        
+        Linux*)
+            # Linux dependencies
+            if [ -f /etc/debian_version ]; then
+                sudo apt-get install -y \
+                    libjpeg-dev \
+                    zlib1g-dev \
+                    libfreetype6-dev \
+                    liblcms2-dev \
+                    libwebp-dev \
+                    tcl-dev \
+                    tk-dev
+            elif [ -f /etc/redhat-release ]; then
+                sudo yum install -y \
+                    libjpeg-devel \
+                    zlib-devel \
+                    freetype-devel \
+                    lcms2-devel \
+                    libwebp-devel \
+                    tcl-devel \
+                    tk-devel
+            fi
+            ;;
+    esac
+}
+
 # Function to install dependencies
 install_dependencies() {
-    echo -e "${YELLOW}Installing dependencies...${NC}"
+    echo -e "${YELLOW}Installing Python dependencies...${NC}"
     
-    # Install or upgrade pip
-    pip install --upgrade pip
+    # Install or upgrade pip and setuptools
+    pip install --upgrade pip setuptools wheel
+    
+    # Install Pillow with extra options
+    pip install --no-cache-dir "Pillow>=9.0.0"
     
     # Install required libraries
-    pip install pillow reportlab customtkinter
-    
+    pip install reportlab customtkinter
+
+    # Verify Pillow installation
+    python3 -c "from PIL import Image; print('Pillow installed successfully')" 2>/dev/null
+    if [ $? -ne 0 ]; then
+        echo -e "${RED}Failed to install Pillow. Trying alternative method...${NC}"
+        pip install --upgrade --force-reinstall "Pillow>=9.0.0"
+    fi
+
     # Check tkinter installation
     python3 -c "import tkinter" 2>/dev/null
     if [ $? -ne 0 ]; then
@@ -126,6 +171,9 @@ main() {
         install_python
     fi
     
+    # Install system dependencies
+    install_system_deps
+    
     # Create virtual environment
     create_venv
     
@@ -134,11 +182,15 @@ main() {
     
     # Run the application
     echo -e "${GREEN}Starting Image Grid Generator...${NC}"
-    python3 image_grid_app.py
+    python3 image_grid_generator.py
     
     # Deactivate virtual environment
     deactivate
 }
+
+# Error handling
+set -e
+trap 'echo -e "${RED}An error occurred. Please check the output above.${NC}"' ERR
 
 # Run the main function
 main
